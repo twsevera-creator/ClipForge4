@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClipForge — AI TikTok Clipper</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:        #0a0a0f;
+    --surface:   #12121a;
+    --border:    #1e1e2e;
+    --accent:    #fe2c55;
+    --accent2:   #25f4ee;
+    --text:      #f0f0f5;
+    --muted:     #6b6b80;
+    --success:   #3ecf8e;
+    --warn:      #f5a623;
+    --radius:    12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    background: var(--border);
+    border-radius: 20px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Main layout ── */
+  main {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    margin-bottom: 14px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    color: var(--muted);
+    font-size: 17px;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* ── Inputs ── */
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  label small {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 12px;
+    margin-left: 6px;
+  }
+
+  input[type="text"], input[type="password"], input[type="url"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  .input-group {
+    margin-bottom: 20px;
+  }
+
+  .url-wrap {
+    position: relative;
+  }
+  .url-wrap input { padding-left: 44px; }
+  .url-icon {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    pointer-events: none;
+  }
+
+  /* ── Sliders row ── */
+  .sliders {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  .slider-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .slider-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    margin-top: 8px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+  /* ── API key toggle ── */
+  .key-wrap {
+    position: relative;
+  }
+  .key-wrap input { padding-right: 48px; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .toggle-key {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+  }
+  .toggle-key:hover { color: var(--text); }
+
+  /* ── Submit button ── */
+  .btn-run {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .btn-run:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+  .btn-run:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  /* ── Progress section ── */
+  #progress-section { display: none; }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .progress-label { font-size: 14px; font-weight: 600; }
+  .progress-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+  }
+
+  .progress-bar-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  /* ── Log terminal ── */
+  .terminal {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    height: 220px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #a0a0b0;
+  }
+  .terminal::-webkit-scrollbar { width: 4px; }
+  .terminal::-webkit-scrollbar-track { background: transparent; }
+  .terminal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-line { padding: 1px 0; }
+  .log-line.success { color: var(--success); }
+  .log-line.error   { color: var(--accent); }
+  .log-line.info    { color: var(--accent2); }
+
+  /* ── Status pill ── */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .status-pill.running { background: rgba(254,44,85,0.15); color: var(--accent); }
+  .status-pill.done    { background: rgba(62,207,142,0.15); color: var(--success); }
+  .status-pill.error   { background: rgba(254,44,85,0.15); color: var(--accent); }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 1.4s infinite;
+  }
+  .status-pill.done .dot,
+  .status-pill.error .dot { animation: none; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  /* ── Clips grid ── */
+  #clips-section { display: none; }
+
+  .clips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .clip-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .clip-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .clip-thumb {
+    height: 120px;
+    background: linear-gradient(135deg, #1a0a12, #0a1020);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .clip-thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.6));
+  }
+  .clip-num {
+    position: absolute;
+    top: 10px; left: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--accent);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    z-index: 1;
+  }
+  .clip-duration {
+    position: absolute;
+    bottom: 10px; right: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 3px 7px;
+    border-radius: 4px;
+    z-index: 1;
+  }
+
+  .clip-body {
+    padding: 14px;
+  }
+
+  .clip-timestamps {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .clip-reason {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .clip-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .btn-download {
+    width: 100%;
+    padding: 9px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-download:hover {
+    background: var(--accent);
+    color: white;
+  }
+
+  /* ── How it works ── */
+  .steps {
+    display: flex;
+    gap: 0;
+    margin-top: 60px;
+    padding-top: 48px;
+    border-top: 1px solid var(--border);
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 0 16px;
+    position: relative;
+  }
+  .step + .step::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 28px;
+    width: 1px; height: 24px;
+    background: var(--border);
+  }
+  .step-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+  .step-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .step-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── Error banner ── */
+  .error-banner {
+    display: none;
+    background: rgba(254,44,85,0.1);
+    border: 1px solid rgba(254,44,85,0.3);
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: var(--accent);
+    font-size: 14px;
+    margin-top: 16px;
+  }
+
+  /* ── New job button ── */
+  .btn-new {
+    display: none;
+    width: 100%;
+    padding: 12px;
+    background: var(--border);
+    border: none;
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: background 0.2s;
+  }
+  .btn-new:hover { background: #2a2a3a; }
+
+  @media (max-width: 600px) {
+    header { padding: 16px 20px; }
+    main { padding: 32px 16px; }
+    .sliders { grid-template-columns: 1fr; }
+    .steps { flex-direction: column; gap: 24px; }
+    .step + .step::before { display: none; }
+    .card { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">✂️</div>
+    Clip<span>Forge</span>
+  </div>
+  <span class="badge">AI-POWERED</span>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Turn long videos into<br><em>viral TikTok clips</em></h1>
+    <p>Paste a YouTube URL. AI finds the best moments, crops to vertical, and burns in captions — automatically.</p>
+  </div>
+
+  <!-- ── Input Form ── -->
+  <div class="card" id="form-card">
+    <div class="card-title">Video Source</div>
+
+    <div class="input-group">
+      <label for="url-input">YouTube URL</label>
+      <div class="url-wrap">
+        <span class="url-icon">▶</span>
+        <input type="url" id="url-input" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label for="key-input">Anthropic API Key <small>stored only in your browser session</small></label>
+      <div class="key-wrap">
+        <input type="password" id="key-input" placeholder="sk-ant-api03-...">
+        <button class="toggle-key" onclick="toggleKey()" title="Show/hide key">👁</button>
+      </div>
+    </div>
+
+    <div class="card-title" style="margin-top: 28px;">Clip Settings</div>
+    <div class="sliders">
+      <div class="slider-group">
+        <label>Number of clips <span class="slider-val" id="clips-val">5</span></label>
+        <input type="range" id="max-clips" min="1" max="10" value="5" oninput="document.getElementById('clips-val').textContent=this.value">
+      </div>
+      <div class="slider-group">
+        <label>Min length <span class="slider-val" id="min-val">30s</span></label>
+        <input type="range" id="min-sec" min="15" max="60" value="30" oninput="document.getElementById('min-val').textContent=this.value+'s'">
+      </div>
+      <div class="slider-group">
+        <label>Max length <span class="slider-val" id="max-val">90s</span></label>
+        <input type="range" id="max-sec" min="30" max="180" value="90" oninput="document.getElementById('max-val').textContent=this.value+'s'">
+      </div>
+    </div>
+
+    <button class="btn-run" id="run-btn" onclick="startJob()">
+      <span>✂️</span> Generate Clips
+    </button>
+    <div class="error-banner" id="error-banner"></div>
+  </div>
+
+  <!-- ── Progress ── -->
+  <div class="card" id="progress-section">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div class="card-title" style="margin-bottom:0;">Processing</div>
+      <div class="status-pill running" id="status-pill">
+        <div class="dot"></div>
+        <span id="status-text">Running</span>
+      </div>
+    </div>
+
+    <div class="progress-header">
+      <span class="progress-label">Progress</span>
+      <span class="progress-pct" id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-bar"></div>
+    </div>
+
+    <div class="terminal" id="log-terminal">
+      <div class="log-line info">▸ ClipForge starting…</div>
+    </div>
+
+    <button class="btn-new" id="new-job-btn" onclick="resetForm()">
+      + Process another video
+    </button>
+  </div>
+
+  <!-- ── Clips ── -->
+  <div id="clips-section">
+    <div class="card-title" style="padding: 0 0 16px;">
+      Your Clips
+    </div>
+    <div class="clips-grid" id="clips-grid"></div>
+  </div>
+
+  <!-- ── How it works ── -->
+  <div class="steps">
+    <div class="step">
+      <div class="step-icon">⬇️</div>
+      <div class="step-title">Download</div>
+      <div class="step-desc">yt-dlp grabs the full video at best quality</div>
+    </div>
+    <div class="step">
+      <div class="step-icon">🎙️</div>
+      <div class="step-title">Transcribe</div>
+      <div class="step-desc">Whisper turns speech to text with timestamps</div>
+    </div>
+    <div class="step">
+      <div class="step-icon">🤖</div>
+      <div class="step-title">AI Selection</div>
+      <div class="step-desc">Claude picks the highest-potential moments</div>
+    </div>
+    <div class="step">
+      <div class="step-icon">✂️</div>
+      <div class="step-title">Export</div>
+      <div class="step-desc">FFmpeg crops to 9:16 and burns in captions</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  let currentJobId = null;
+  let evtSource = null;
+
+  function toggleKey() {
+    const inp = document.getElementById('key-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-banner');
+    el.textContent = '⚠️  ' + msg;
+    el.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('error-banner').style.display = 'none';
+  }
+
+  async function startJob() {
+    hideError();
+    const url = document.getElementById('url-input').value.trim();
+    const key = document.getElementById('key-input').value.trim();
+    const maxClips = document.getElementById('max-clips').value;
+    const minSec   = document.getElementById('min-sec').value;
+    const maxSec   = document.getElementById('max-sec').value;
+
+    if (!url) return showError('Please enter a YouTube URL.');
+    if (!key)  return showError('Please enter your Anthropic API key.');
+    if (!url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('http')) {
+      return showError('Please enter a valid video URL.');
+    }
+
+    document.getElementById('run-btn').disabled = true;
+    document.getElementById('form-card').style.opacity = '0.5';
+    document.getElementById('form-card').style.pointerEvents = 'none';
+
+    const res = await fetch('/api/start', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ url, api_key: key, max_clips: maxClips, min_sec: minSec, max_sec: maxSec })
+    });
+    const data = await res.json();
+    if (data.error) return showError(data.error);
+
+    currentJobId = data.job_id;
+    document.getElementById('progress-section').style.display = 'block';
+    document.getElementById('progress-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    startStreaming(currentJobId);
+  }
+
+  function startStreaming(jid) {
+    if (evtSource) evtSource.close();
+    evtSource = new EventSource(`/api/stream/${jid}`);
+
+    evtSource.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+
+      // Progress bar
+      document.getElementById('progress-bar').style.width = d.progress + '%';
+      document.getElementById('progress-pct').textContent = d.progress + '%';
+
+      // Logs
+      const term = document.getElementById('log-terminal');
+      (d.new_logs || []).forEach(line => {
+        const div = document.createElement('div');
+        div.className = 'log-line' +
+          (line.includes('✅') || line.includes('🎉') ? ' success' :
+           line.includes('❌') ? ' error' :
+           line.includes('🤖') || line.includes('⬇️') || line.includes('🎙️') || line.includes('✂️') ? ' info' : '');
+        div.textContent = line;
+        term.appendChild(div);
+        term.scrollTop = term.scrollHeight;
+      });
+
+      // Status pill
+      if (d.status === 'done') {
+        const pill = document.getElementById('status-pill');
+        pill.className = 'status-pill done';
+        document.getElementById('status-text').textContent = 'Complete';
+        document.getElementById('new-job-btn').style.display = 'block';
+        evtSource.close();
+        renderClips(d.clips);
+      } else if (d.status === 'error') {
+        const pill = document.getElementById('status-pill');
+        pill.className = 'status-pill error';
+        document.getElementById('status-text').textContent = 'Failed';
+        document.getElementById('new-job-btn').style.display = 'block';
+        evtSource.close();
+      }
+    };
+  }
+
+  function renderClips(clips) {
+    if (!clips || clips.length === 0) return;
+    const section = document.getElementById('clips-section');
+    const grid = document.getElementById('clips-grid');
+    section.style.display = 'block';
+    grid.innerHTML = '';
+
+    clips.forEach((clip, i) => {
+      const card = document.createElement('div');
+      card.className = 'clip-card';
+      const emojis = ['🎯','🔥','⚡','💥','🎬','✨','🚀','💡','🎤','🌊'];
+      card.innerHTML = `
+        <div class="clip-thumb">
+          <span>${emojis[i % emojis.length]}</span>
+          <span class="clip-num">CLIP ${String(i+1).padStart(2,'0')}</span>
+          <span class="clip-duration">${clip.duration}s</span>
+        </div>
+        <div class="clip-body">
+          <div class="clip-timestamps">▶ ${clip.start} → ${clip.end}</div>
+          <div class="clip-reason">${clip.reason}</div>
+          <div class="clip-meta">
+            <span>${clip.duration}s</span>
+            <span>${clip.size_mb} MB</span>
+          </div>
+          <a class="btn-download" href="/api/download/${currentJobId}/${clip.filename}" download>
+            ⬇ Download Clip ${i+1}
+          </a>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetForm() {
+    if (evtSource) evtSource.close();
+    currentJobId = null;
+    document.getElementById('form-card').style.opacity = '1';
+    document.getElementById('form-card').style.pointerEvents = 'auto';
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('progress-section').style.display = 'none';
+    document.getElementById('clips-section').style.display = 'none';
+    document.getElementById('log-terminal').innerHTML = '<div class="log-line info">▸ ClipForge starting…</div>';
+    document.getElementById('progress-bar').style.width = '0%';
+    document.getElementById('progress-pct').textContent = '0%';
+    document.getElementById('new-job-btn').style.display = 'none';
+    document.getElementById('status-pill').className = 'status-pill running';
+    document.getElementById('status-text').textContent = 'Running';
+    document.getElementById('url-input').value = '';
+    hideError();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Allow Enter key to start
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('run-btn').disabled) startJob();
+  });
+</script>
+</body>
+</html>
