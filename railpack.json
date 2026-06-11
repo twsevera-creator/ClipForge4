@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "python",
+  "packages": {
+    "python": "3.11"
+  },
+  "buildAptPackages": ["ffmpeg"],
+  "steps": {
+    "install": {
+      "commands": [
+        { "cmd": "pip install --upgrade pip setuptools wheel" },
+        { "src": "requirements.txt", "dest": "requirements.txt" },
+        { "cmd": "pip install --no-build-isolation -r requirements.txt" }
+      ]
+    }
+  },
+  "deploy": {
+    "aptPackages": ["ffmpeg"],
+    "startCommand": "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 600 --worker-class gthread --threads 4"
+  }
+}
